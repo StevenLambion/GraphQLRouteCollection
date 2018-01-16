@@ -102,12 +102,3 @@ This project is released under the MIT license. See [LICENSE](LICENSE) for detai
 [swift-url]: https://swift.org
 [mit-badge]: https://img.shields.io/badge/License-MIT-blue.svg?style=flat
 [mit-url]: https://tldrlegal.com/license/mit-license
-[slack-image]: http://s13.postimg.org/ybwy92ktf/Slack.png
-[slack-badge]: https://zewo-slackin.herokuapp.com/badge.svg
-[slack-url]: http://slack.zewo.io
-[travis-badge]: https://travis-ci.org/GraphQLSwift/GraphQL.svg?branch=master
-[travis-url]: https://travis-ci.org/GraphQLSwift/GraphQL
-[codecov-badge]: https://codecov.io/gh/GraphQLSwift/GraphQL/branch/master/graph/badge.svg
-[codecov-url]: https://codecov.io/gh/GraphQLSwift/GraphQL
-[codebeat-badge]: https://codebeat.co/badges/13293962-d1d8-4906-8e62-30a2cbb66b38
-[codebeat-url]: https://codebeat.co/projects/github-com-graphqlswift-graphql
