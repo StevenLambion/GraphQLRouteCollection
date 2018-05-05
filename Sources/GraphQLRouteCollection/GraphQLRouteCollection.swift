@@ -8,7 +8,7 @@ public typealias SchemaContext = (
     context: Any
 )
 
-public typealias SchemaProvider = (Request) -> SchemaContext
+public typealias SchemaProvider = (Request) throws -> SchemaContext
 
 public final class GraphQLRouteCollection: RouteCollection {
     /// Path to the graphql route
@@ -76,7 +76,7 @@ public final class GraphQLRouteCollection: RouteCollection {
     }
 
     func execute(for req: Request, query: String, variables: JSON, operationName: String? = nil) throws -> ResponseRepresentable {
-        let (schema, rootValue, context) = self.schemaProvider(req)
+        let (schema, rootValue, context) = try self.schemaProvider(req)
         do {
             return try graphql(
                 schema: schema,
