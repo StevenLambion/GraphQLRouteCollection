@@ -81,7 +81,7 @@ Provides a simple means to setup typical GraphQL endpoints for both GET and POST
 
 ```swift
 let graphql = app.make(GraphQLService.self)
-let graphQLRoutes = GraphQLRouteCollection(using: graphql)
+let graphQLRoutes = GraphQLRouteCollection()
 ```
 
 ### GraphiQL
@@ -97,7 +97,7 @@ router.get("/graphiql") { req in
 You can also enable it for the route collection:
 
 ```swift
-GraphQLRouteCollection(using: graphql, enableGraphiQL: true)
+GraphQLRouteCollection(enableGraphiQL: true)
 ```
 
 ### Type Safety
