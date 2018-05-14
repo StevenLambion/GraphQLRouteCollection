@@ -1,1 +1,1 @@
-brew libressl
+brew "libressl"
