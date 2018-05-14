@@ -2,12 +2,13 @@
 
 Provides a simple route collection to integrate [GraphQLSwift](https://github.com/GraphQLSwift/GraphQL) into a Vapor application.
 
+[![Travis][travis-badge]][travis-url]
 [![Swift][swift-badge]][swift-url]
 [![License][mit-badge]][mit-url]
 
 ## Installation
 
-Add GraphQLRouteCollection to your `Package.swift`
+Add VaporGraphQL to your `Package.swift`
 
 ```swift
 import PackageDescription
@@ -15,61 +16,49 @@ import PackageDescription
 let package = Package(
     dependencies: [
         ...
-        .package(url: "https://github.com/stevenlambion/GraphQLRouteCollection.git", .upToNextMajor(from: "0.0.1")),
+        .package(url: "https://github.com/stevenlambion/vapor-graphql.git", .upToNextMajor(from: "0.1.0")),
     ],
     .target(
         name: "App",
-        dependencies: [..., "GraphQLRouteCollection"],
+        dependencies: [..., "VaporGraphQL"],
     ),
 )
 ```
 
 ## Usage
 
-Add the GraphQLRouteCollection to your droplet. Your schema, rootValue, and context are provided through a closure to allow per request dynamic execution. A common use case is setting up [dataloaders](https://github.com/facebook/dataloader) for each request.
-
 ### Basic
 
+Create a new HTTPGraphQL service with your schema, then register it:
+
 ```swift
-import Vapor
-import GraphQLRouteCollection
+services.register(HTTPGraphQL() { req in (
+  schema: schema,
+  rootValue: [:],
+  context: req
+)});
+```
 
-extension Droplet {
-    func setupRoutes() throws {
+Then use it in your app's routing:
 
-        // By default, the collection uses "graphql" as its path.
-        // Pass a custom path as the first argument to change it.
+```swift
+let router = app.make(Router.self)
+let graphql = app.make(GraphQLService.self)
 
-        try collection(
-            GraphQLRouteCollection() { req in (
-                schema: schema,
-                rootValue: [:],
-                context: [:]
-            )}
-        )
-
-    }
+router.get("/graphql") { req in
+  return graphql.execute(req)
+}
+router.post("/graphql") { req in
+  return graphql.execute(req)
 }
 ```
 
-### GraphiQL
+### Introspection
 
-Enables the [GraphiQL](https://github.com/graphql/graphiql) IDE when a user accesses the graphql path in a web browser.
-
-```swift
-GraphQLRouteCollection(enableGraphiQL: true) { req in (
-    schema: schema,
-    rootValue: [:],
-    context: [:]
-)}
-```
-
-### Introspection Query
-
-The route collection enables a quick way to introspect your entire graphql schema. This is useful in development when you need to auto-generate a schema for graphql clients such as Apollo. Here's an example of how to enable for development use.
+HTTPGraphQL provides a way to introspect the entire graphql schema. This is useful in development when you need to auto-generate a schema for graphql clients.
 
 ```swift
-GraphQLRouteCollection(enableIntrospectionQuery: true) { req in (
+let graphql = HTTPGraphQL(enableIntrospectionQuery: true) { req in (
     schema: schema,
     rootValue: [:],
     context: [:]
@@ -84,21 +73,80 @@ To retrieve the introspected schema simply hit the graphql endpoint without a pr
   }
 ```
 
-### The Kitchen Sink
+HTTPGraphQL will use the request's method to determine how to retrieve the graphql query. For GET requests, it uses the query items in the URL. For POSTs, it uses the payload.
+
+### GraphQLRouteCollection
+
+Provides a simple means to setup typical GraphQL endpoints for both GET and POST requests.
 
 ```swift
-GraphQLRouteCollection("graphql", enableGraphiQL: true, enableIntrospectionQuery: true) { req in (
-    schema: schema,
-    rootValue: [:],
-    context: ["dataLoaders": createDataLoaders(req)]
-)}
+let graphql = app.make(GraphQLService.self)
+let graphQLRoutes = GraphQLRouteCollection(using: graphql)
+```
+
+### GraphiQL
+
+HTTPGraphQL provides a method to return a [GraphiQL](https://github.com/graphql/graphiql) HTML view.
+
+```swift
+router.get("/graphiql") { req in
+  return graphql.renderGraphiQL(pathToGraphQL: "/graphql")
+}
+```
+
+You can also enable it for the route collection:
+
+```swift
+GraphQLRouteCollection(using: graphql, enableGraphiQL: true)
+```
+
+### Type Safety
+
+The Swift GraphQL library does not provide a fully type safe environment currently. To mitigate this, there's a `withTypedResolve()` decorator function to wrap resolvers that provide typed sources and context objects. This function has multiple overloads for both field and type resolvers. The function helps to provide better type support in development and runtime checking of the GraphQL API.
+
+```swift
+let UserType = try! GraphQLObjectType(
+  name: "User",
+  fields: [
+    "id": GraphQLField(type: GraphQLNonNull(GraphQLID)),
+    "email": GraphQLField(type: GraphQLNonNull(GraphQLString)),
+    "role": GraphQLField(
+      type: UserRoleType,
+      resolve: withTypedResolve { (user: User, _,) -> Role in
+        try user.role.get().wait()
+      })
+  ]
+)
+```
+
+### Async Support
+
+Vapor 3 has a strong focus on async, however, the Swift GraphQL library hasn't implemented this functionality yet. To mitigate this problem the HTTPGraphQL service runs executions using GCD so as not to block the NIO event loop. It also uses the concurrency strategy for queries and subscriptions for parallel field resolving.
+
+For async resolvers, a `resolveWithFuture()` decorator is provided. This allows resolvers to work with async code based on Swift NIO as they typically would in Vapor. `resolveWithFuture()` works by waiting for the results under an async queue separate from the NIO event loop. `resolveWithFuture()` is composed using the `withTypedResolve()` decorator, so it also includes type handling.
+
+```swift
+let UserType = try! GraphQLObjectType(
+  name: "User",
+  fields: [
+    "id": GraphQLField(type: GraphQLNonNull(GraphQLID)),
+    "email": GraphQLField(type: GraphQLNonNull(GraphQLString)),
+    "role": GraphQLField(
+      type: UserRoleType,
+      resolve: resolveWithFuture { (user: User, _,) -> Future<Role> in
+        try user.role.get()
+      })
+  ]
+)
 ```
 
 ## License
 
 This project is released under the MIT license. See [LICENSE](LICENSE) for details.
 
-[swift-badge]: https://img.shields.io/badge/Swift-4-orange.svg?style=flat
+[swift-badge]: https://img.shields.io/badge/Swift-4.1-orange.svg?style=flat
 [swift-url]: https://swift.org
 [mit-badge]: https://img.shields.io/badge/License-MIT-blue.svg?style=flat
 [mit-url]: https://tldrlegal.com/license/mit-license
+[travis-badge]: https://travis-ci.org/StevenLambion/GraphQLRouteCollection.svg?branch=master
+[travis-url]: https://travis-ci.org/StevenLambion/GraphQLRouteCollection
