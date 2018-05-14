@@ -62,7 +62,7 @@ func performPOSTRequest(query: String, variables: [String:Any] = [:], operationN
 }
 
 class HTTPGraphQLTests: XCTestCase {
-  
+
   func testQueryWithGET() throws {
     let query = """
       query HeroQuery {
@@ -83,7 +83,7 @@ class HTTPGraphQLTests: XCTestCase {
     let result = try performGETRequest(query: query)
     XCTAssertEqual(result, expected)
   }
-  
+
   func testVariablesWithGET() throws {
     let query = """
       query HeroQuery($episode: Episode) {
@@ -105,7 +105,7 @@ class HTTPGraphQLTests: XCTestCase {
     let result = try performGETRequest(query: query, variables: variables)
     XCTAssertEqual(result, expected)
   }
-  
+
   func testQueryWithPOST() throws {
     let query = """
       query HeroQuery {
@@ -126,7 +126,7 @@ class HTTPGraphQLTests: XCTestCase {
     let result = try performPOSTRequest(query: query)
     XCTAssertEqual(result, expected)
   }
-  
+
   func testVariablesWithPOST() throws {
     let query = """
       query HeroQuery($episode: Episode) {
@@ -148,7 +148,7 @@ class HTTPGraphQLTests: XCTestCase {
     let result = try performPOSTRequest(query: query, variables: variables)
     XCTAssertEqual(result, expected)
   }
-  
+
   static var allTests = [
     testQueryWithGET,
     testVariablesWithGET,
