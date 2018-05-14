@@ -150,7 +150,9 @@ class HTTPGraphQLTests: XCTestCase {
   }
 
   static var allTests = [
-    testQueryWithGET,
-    testVariablesWithGET,
-    testVariablesWithPOST]
+    ("testQueryWithGET", testQueryWithGET),
+    ("testVariablesWithGET", testVariablesWithGET),
+    ("testQueryWithPOST", testQueryWithPOST),
+    ("testVariablesWithPOST", testVariablesWithPOST)
+  ]
 }
