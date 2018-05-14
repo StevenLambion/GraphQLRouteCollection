@@ -1,6 +1,6 @@
 import XCTest
-@testable import GraphQLRouteCollectionTests
+@testable import VaporGraphQLTests
 
 XCTMain([
-    testCase(GraphQLRouteCollectionTests.allTests),
+    testCase(VaporGraphQLTests.allTests),
 ])
