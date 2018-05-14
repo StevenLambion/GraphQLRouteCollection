@@ -30,7 +30,7 @@ public struct HTTPGraphQL: GraphQLService {
     self.executionContextProvider = executionContextProvider
     self.enableIntrospection = enableIntrospection
     self.dispatchQueue = DispatchQueue(
-      label: "HTTP GraphQL Execution",
+      label: "HTTP GraphQL Execution Queue",
       qos: .userInitiated,
       attributes: .concurrent
     )
@@ -45,8 +45,8 @@ public struct HTTPGraphQL: GraphQLService {
       do {
         let (schema, rootValue, context) = try self.executionContextProvider(req)
         promise.succeed(result: try graphql(
-          queryStrategy: ConcurrentDispatchFieldExecutionStrategy(),
-          subscriptionStrategy: ConcurrentDispatchFieldExecutionStrategy(),
+          queryStrategy: ConcurrentDispatchFieldExecutionStrategy(dispatchQueue: self.dispatchQueue),
+          subscriptionStrategy: ConcurrentDispatchFieldExecutionStrategy(dispatchQueue: self.dispatchQueue),
           schema: schema,
           request: executionRequest.query,
           rootValue: rootValue,
