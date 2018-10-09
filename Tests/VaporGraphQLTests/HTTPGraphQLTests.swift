@@ -12,7 +12,7 @@ func urlEncode(_ stringToEncode: String) -> String {
 func createHTTPGraphQL() -> HTTPGraphQL {
   return HTTPGraphQL() { req in
     (
-      schema: StarWarsSchema,
+      schema: starWarsSchema,
       rootValue: [:],
       context: req
     )
