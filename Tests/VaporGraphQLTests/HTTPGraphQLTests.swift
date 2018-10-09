@@ -11,10 +11,9 @@ func urlEncode(_ stringToEncode: String) -> String {
 
 func createHTTPGraphQL() -> HTTPGraphQL {
   return HTTPGraphQL() { req in
-    (
-      schema: starWarsSchema,
-      rootValue: [:],
-      context: req
+    return ExecutionContext(
+        schema: starWarsSchema,
+        eventLoopGroup: req
     )
   }
 }

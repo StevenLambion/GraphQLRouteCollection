@@ -4,11 +4,10 @@ import StarWars
 
 /// Called before your application initializes.
 public func configure(_ config: inout Config, _ env: inout Vapor.Environment, _ services: inout Services) throws {
-    let httpGraphQL = HTTPGraphQL() { req -> ExecutionContext in
-        return (
+    let httpGraphQL = HTTPGraphQL() { req in
+        return ExecutionContext(
             schema: starWarsSchema,
-            rootValue: [:],
-            context: req
+            eventLoopGroup: req
         )
     }
     services.register(httpGraphQL, as: GraphQLService.self)

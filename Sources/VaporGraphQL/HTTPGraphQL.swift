@@ -2,11 +2,19 @@ import Vapor
 import GraphQL
 import Graphiti
 
-public typealias ExecutionContext = (
-  schema: GraphQLSchema,
-  rootValue: Any,
-  context: Any
-)
+public struct ExecutionContext {
+    public let schema: GraphQLSchema
+    public let rootValue: Any
+    public let context: Any
+    public let eventLoopGroup: EventLoopGroup
+    
+    public init(schema: GraphQLSchema, rootValue: Any = (), context: Any = (), eventLoopGroup: EventLoopGroup) {
+        self.schema = schema
+        self.rootValue = rootValue
+        self.context = context
+        self.eventLoopGroup = eventLoopGroup
+    }
+}
 
 /// Provides HTTPGraphQL an execution context to perform per request.
 public typealias ExecutionContextProvider = (Request) throws -> ExecutionContext
@@ -33,15 +41,15 @@ public struct HTTPGraphQL: GraphQLService {
       return self.executeIntrospectionQuery(for: req)
     }
       do {
-        let (schema, rootValue, context) = try self.executionContextProvider(req)
+        let executionContext = try self.executionContextProvider(req)
         let result = try graphql(
-                    schema: schema, 
-                    request: executionRequest.query, 
-                    rootValue: rootValue, 
-                    context: context, 
-                    eventLoopGroup: req, 
-                    variableValues: executionRequest.variables, 
-                    operationName: executionRequest.operationName)
+            schema: executionContext.schema, 
+            request: executionRequest.query, 
+            rootValue: executionContext.rootValue, 
+            context: executionContext.context, 
+            eventLoopGroup: executionContext.eventLoopGroup, 
+            variableValues: executionRequest.variables, 
+            operationName: executionRequest.operationName)
         return result
       } catch let e as GraphQLError {
         let graphQLError: [String: Map] = [

@@ -1,6 +1,5 @@
 import GraphQL
 import Vapor
-import VaporGraphQL
 
 /**
  * Taken from:
