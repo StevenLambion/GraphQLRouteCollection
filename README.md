@@ -16,7 +16,7 @@ import PackageDescription
 let package = Package(
     dependencies: [
         ...
-        .package(url: "https://github.com/stevenlambion/vapor-graphql.git", .upToNextMajor(from: "0.1.0")),
+        .package(url: "https://github.com/stevenlambion/GraphQLRouteCollection.git", .upToNextMajor(from: "0.1.0")),
     ],
     .target(
         name: "App",
@@ -36,21 +36,17 @@ services.register(HTTPGraphQL() { req in (
   schema: schema,
   rootValue: [:],
   context: req
-)});
+)})
 ```
 
-Then use it in your app's routing:
+Then route it in your app's `config.swift` file:
 
 ```swift
-let router = app.make(Router.self)
-let graphql = app.make(GraphQLService.self)
-
-router.get("/graphql") { req in
-  return graphql.execute(req)
-}
-router.post("/graphql") { req in
-  return graphql.execute(req)
-}
+let router = EngineRouter.default()
+let graphQLRouteCollection = GraphQLRouteCollection(enableGraphiQL: true)
+try graphQLRouteCollection.boot(router: router)
+try routes(router)
+services.register(router, as: Router.self)
 ```
 
 ### Introspection
@@ -98,46 +94,6 @@ You can also enable it for the route collection:
 
 ```swift
 GraphQLRouteCollection(enableGraphiQL: true)
-```
-
-### Type Safety
-
-The Swift GraphQL library does not provide a fully type safe environment currently. To mitigate this, there's a `withTypedResolve()` decorator function to wrap resolvers that provide typed sources and context objects. This function has multiple overloads for both field and type resolvers. The function helps to provide better type support in development and runtime checking of the GraphQL API.
-
-```swift
-let UserType = try! GraphQLObjectType(
-  name: "User",
-  fields: [
-    "id": GraphQLField(type: GraphQLNonNull(GraphQLID)),
-    "email": GraphQLField(type: GraphQLNonNull(GraphQLString)),
-    "role": GraphQLField(
-      type: UserRoleType,
-      resolve: withTypedResolve { (user: User, _,) -> Role in
-        try user.role.get().wait()
-      })
-  ]
-)
-```
-
-### Async Support
-
-Vapor 3 has a strong focus on async, however, the Swift GraphQL library hasn't implemented this functionality yet. To mitigate this problem the HTTPGraphQL service runs executions using GCD so as not to block the NIO event loop. It also uses the concurrency strategy for queries and subscriptions for parallel field resolving.
-
-For async resolvers, a `resolveWithFuture()` decorator is provided. This allows resolvers to work with async code based on Swift NIO as they typically would in Vapor. `resolveWithFuture()` works by waiting for the results under an async queue separate from the NIO event loop. `resolveWithFuture()` is composed using the `withTypedResolve()` decorator, so it also includes type handling.
-
-```swift
-let UserType = try! GraphQLObjectType(
-  name: "User",
-  fields: [
-    "id": GraphQLField(type: GraphQLNonNull(GraphQLID)),
-    "email": GraphQLField(type: GraphQLNonNull(GraphQLString)),
-    "role": GraphQLField(
-      type: UserRoleType,
-      resolve: resolveWithFuture { (user: User, _,) -> Future<Role> in
-        try user.role.get()
-      })
-  ]
-)
 ```
 
 ## License
