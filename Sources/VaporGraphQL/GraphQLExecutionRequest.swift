@@ -8,6 +8,14 @@ public struct GraphQLExecutionRequest: Content {
   let variables: [String:Map]
   let operationName: String?
   
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    query = try container.decode(String.self, forKey: .query)
+    // the decoder has trouble decoding a nil `[String: Map]`, so we'll use an optional throw.
+    variables = (try? container.decode([String: Map].self, forKey: .variables)) ?? [:]
+    operationName = try? container.decode(String.self, forKey: .operationName)
+  }
+    
   init(query: String, variables: [String:Map]?, operationName: String?) {
     self.query = query
     self.variables = variables ?? [:]

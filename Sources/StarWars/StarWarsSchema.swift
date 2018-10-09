@@ -74,7 +74,7 @@ extension Droid : MapFallibleRepresentable {}
  * This implements the following type system shorthand:
  *   enum Episode { NEWHOPE, EMPIRE, JEDI }
  */
-let EpisodeEnum = try! GraphQLEnumType(
+let episodeEnum = try! GraphQLEnumType(
     name: "Episode",
     description: "One of the films in the Star Wars Trilogy",
     values: [
@@ -105,7 +105,7 @@ let EpisodeEnum = try! GraphQLEnumType(
  *     secretBackstory: String
  *   }
  */
-let CharacterInterface = try! GraphQLInterfaceType(
+let characterInterface = try! GraphQLInterfaceType(
     name: "Character",
     description: "A character in the Star Wars Trilogy",
     fields: [
@@ -122,7 +122,7 @@ let CharacterInterface = try! GraphQLInterfaceType(
         description: "The friends of the character, or an empty list if they have none."
       ),
       "appearsIn": GraphQLField(
-        type: GraphQLList(EpisodeEnum),
+        type: GraphQLList(episodeEnum),
         description: "Which movies they appear in."
       ),
       "secretBackstory": GraphQLField(
@@ -153,7 +153,7 @@ let CharacterInterface = try! GraphQLInterfaceType(
  *     secretBackstory: String
  *   }
  */
-let HumanType = try! GraphQLObjectType(
+let humanType = try! GraphQLObjectType(
     name: "Human",
     description: "A humanoid creature in the Star Wars universe.",
     fields: [
@@ -166,15 +166,16 @@ let HumanType = try! GraphQLObjectType(
             description: "The name of the human."
         ),
         "friends": GraphQLField(
-            type: GraphQLList(CharacterInterface),
+            type: GraphQLList(characterInterface),
             description: "The friends of the human, or an empty list if they " +
             "have none.",
-            resolve: { human, _, _, _ in
-                return getFriends(character: human as! Human)
+            resolve: { human, _, _, eventLoopGroup, _ in
+                let friends = getFriends(character: human as! Human)
+                return eventLoopGroup.next().newSucceededFuture(result: friends)
             }
         ),
         "appearsIn": GraphQLField(
-            type: GraphQLList(EpisodeEnum),
+            type: GraphQLList(episodeEnum),
             description: "Which movies they appear in."
         ),
         "homePlanet": GraphQLField(
@@ -184,7 +185,7 @@ let HumanType = try! GraphQLObjectType(
         "secretBackstory": GraphQLField(
             type: GraphQLString,
             description: "Where are they from and how they came to be who they are.",
-            resolve: { _, _, _, _ in
+            resolve: { _, _, _, _, _ in
                 struct Secret : Error, CustomStringConvertible {
                     let description: String
                 }
@@ -193,7 +194,7 @@ let HumanType = try! GraphQLObjectType(
             }
         ),
     ],
-    interfaces: [CharacterInterface],
+    interfaces: [characterInterface],
     isTypeOf: { source, _, _ in
         source is Human
     }
@@ -213,7 +214,7 @@ let HumanType = try! GraphQLObjectType(
  *     primaryFunction: String
  *   }
  */
-let DroidType = try! GraphQLObjectType(
+let droidType = try! GraphQLObjectType(
     name: "Droid",
     description: "A mechanical creature in the Star Wars universe.",
     fields: [
@@ -226,20 +227,21 @@ let DroidType = try! GraphQLObjectType(
             description: "The name of the droid."
         ),
         "friends": GraphQLField(
-            type: GraphQLList(CharacterInterface),
+            type: GraphQLList(characterInterface),
             description: "The friends of the droid, or an empty list if they have none.",
-            resolve: { droid, _, _, _ in
-                return getFriends(character: droid as! Droid)
+            resolve: { droid, _, _, eventLoopGroup, _ in
+                let friends = getFriends(character: droid as! Droid)
+                return eventLoopGroup.next().newSucceededFuture(result: friends)
             }
         ),
         "appearsIn": GraphQLField(
-            type: GraphQLList(EpisodeEnum),
+            type: GraphQLList(episodeEnum),
             description: "Which movies they appear in."
         ),
         "secretBackstory": GraphQLField(
             type: GraphQLString,
             description: "Construction date and the name of the designer.",
-            resolve: { _, _, _, _ in
+            resolve: { _, _, _, _, _ in
                 struct Secret : Error, CustomStringConvertible {
                     let description: String
                 }
@@ -252,7 +254,7 @@ let DroidType = try! GraphQLObjectType(
             description: "The primary function of the droid."
         ),
     ],
-    interfaces: [CharacterInterface],
+    interfaces: [characterInterface],
     isTypeOf: { source, _, _ in
         source is Droid
     }
@@ -273,49 +275,51 @@ let DroidType = try! GraphQLObjectType(
  *   }
  *
  */
-let QueryType = try! GraphQLObjectType(
+let queryType = try! GraphQLObjectType(
     name: "Query",
     fields: [
+        
         "hero": GraphQLField(
-            type: CharacterInterface,
+            type: characterInterface,
             args: [
                 "episode": GraphQLArgument(
-                    type: EpisodeEnum,
+                    type: episodeEnum,
                     description:
                     "If omitted, returns the hero of the whole saga. If " +
                     "provided, returns the hero of that particular episode."
                 )
             ],
-            resolve: resolveWithFuture { (source: Any, arguments: Map, context: Request) -> Future<Character?> in
-              return context.eventLoop.submit {
+            resolve: { source, arguments, _, eventLoopGroup, _ in
                 let episode = Episode(arguments["episode"].string)
-                return getHero(episode: episode)
-              }
+                let hero = getHero(episode: episode)
+                return eventLoopGroup.next().newSucceededFuture(result: hero)
             }
         ),
         "human": GraphQLField(
-            type: HumanType,
+            type: humanType,
             args: [
                 "id": GraphQLArgument(
                     type: GraphQLNonNull(GraphQLString),
                     description: "id of the human"
                 )
             ],
-            resolve: resolveWithFuture { (source: Any, arguments: Map, context: Request) -> Future<Human?> in
-              return context.eventLoop.submit { getHuman(id: arguments["id"].string!) }
+            resolve: { source, arguments, _, eventLoopGroup, _ in
+                let human = getHuman(id: arguments["id"].string!)
+                return eventLoopGroup.next().newSucceededFuture(result: human)
             }
         ),
         "droid": GraphQLField(
-            type: DroidType,
+            type: droidType,
             args: [
                 "id": GraphQLArgument(
                     type: GraphQLNonNull(GraphQLString),
                     description: "id of the droid"
                 )
             ],
-            resolve: resolveWithFuture { (source: Any, arguments: Map, context: Request) -> Future<Droid?> in
-              return context.eventLoop.submit { getDroid(id: arguments["id"].string!) }
-            }
+            resolve: { source, arguments, _, eventLoopGroup, _ in
+                let droid = getDroid(id: arguments["id"].string!)
+                return eventLoopGroup.next().newSucceededFuture(result: droid)
+        }
         ),
     ]
 )
@@ -324,7 +328,7 @@ let QueryType = try! GraphQLObjectType(
  * Finally, we construct our schema (whose starting query type is the query
  * type we defined above) and export it.
  */
-let StarWarsSchema = try! GraphQLSchema(
-    query: QueryType,
-    types: [HumanType, DroidType]
+public let starWarsSchema = try! GraphQLSchema(
+    query: queryType,
+    types: [humanType, droidType]
 )

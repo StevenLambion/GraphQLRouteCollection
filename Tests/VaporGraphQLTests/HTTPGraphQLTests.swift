@@ -1,5 +1,6 @@
 import XCTest
 @testable import VaporGraphQL
+@testable import StarWars
 import Vapor
 import HTTP
 import GraphQL
