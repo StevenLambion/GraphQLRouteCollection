@@ -94,7 +94,7 @@ extension GraphQLService {
   /// Returns an introspection of the GraphQL schema.
   public func executeIntrospectionQuery(for req: Request) -> Future<Map> {
     return self.execute(
-      GraphQLExecutionRequest(query: introspectionQuery, variables: [:], operationName: ""),
+      GraphQLExecutionRequest(query: introspectionQuery, variables: [:], operationName: nil),
       for: req
     )
   }

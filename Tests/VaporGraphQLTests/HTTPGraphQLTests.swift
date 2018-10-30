@@ -1,5 +1,6 @@
 import XCTest
 @testable import VaporGraphQL
+@testable import StarWars
 import Vapor
 import HTTP
 import GraphQL
@@ -10,10 +11,9 @@ func urlEncode(_ stringToEncode: String) -> String {
 
 func createHTTPGraphQL() -> HTTPGraphQL {
   return HTTPGraphQL() { req in
-    (
-      schema: StarWarsSchema,
-      rootValue: [:],
-      context: req
+    return ExecutionContext(
+        schema: starWarsSchema,
+        eventLoopGroup: req
     )
   }
 }
