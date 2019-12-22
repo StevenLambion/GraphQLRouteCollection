@@ -13,6 +13,7 @@ extension GraphQLRouteCollection {
             directives {
                 name
                 description
+                locations
                 args {
                     ...InputValue
                 }
